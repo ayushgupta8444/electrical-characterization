@@ -1,6 +1,6 @@
 import { createContext, useMemo, useState } from "react";
 
-const API_URL = "http://127.0.0.1:5000/analyze";
+const API_URL = "https://mosfet-analyzer.onrender.com/analyze";
 
 const AnalysisContext = createContext(null);
 
