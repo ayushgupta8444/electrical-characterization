@@ -1,6 +1,6 @@
 import { createContext, useMemo, useState } from "react";
 
-const API_URL = "https://mosfet-analyzer.onrender.com/analyze";
+const API_URL = "https://electrical-characterization.onrender.com";
 
 const AnalysisContext = createContext(null);
 
