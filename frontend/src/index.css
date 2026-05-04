@@ -2,7 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-slate-200 shadow-lg;
+  }
+}
+
 body {
-  @apply bg-slate-100 text-slate-800 antialiased;
+  @apply bg-slate-50 text-slate-900 antialiased min-h-screen;
+  background-image: radial-gradient(circle at top right, #e2e8f0, transparent 40%),
+                    radial-gradient(circle at bottom left, #f8fafc, transparent 40%);
   margin: 0;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
