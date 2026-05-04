@@ -30,7 +30,7 @@ export default function App() {
     formData.append("device_type", device);
 
     try {
-      const response = await fetch("http://localhost:8000/analyze", {
+      const response = await fetch("https://electrical-characterization-1.onrender.com/analyze", {
         method: "POST",
         body: formData,
       });
