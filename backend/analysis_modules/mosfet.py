@@ -1,19 +1,17 @@
 import pandas as pd
 import numpy as np
 
-def analyze_mosfet(df: pd.DataFrame, target_vds=1.0, target_vgs=3.0):
+def analyze_mosfet(df_idvg: pd.DataFrame, df_idvd: pd.DataFrame):
     
     # -----------------------------
     # 1. FILTER DATA PROPERLY
     # -----------------------------
     
-    # For Id vs Vgs (fix Vds)
-    df_vgs = df[np.isclose(df['Vds'], target_vds)]
-    df_vgs = df_vgs.sort_values('Vgs').reset_index(drop=True)
+    # For Id vs Vgs
+    df_vgs = df_idvg.sort_values('Vgs').reset_index(drop=True)
     
-    # For Id vs Vds (fix Vgs)
-    df_vds = df[np.isclose(df['Vgs'], target_vgs)]
-    df_vds = df_vds.sort_values('Vds').reset_index(drop=True)
+    # For Id vs Vds
+    df_vds = df_idvd.sort_values('Vds').reset_index(drop=True)
     
     # Extract arrays
     Vgs = df_vgs['Vgs'].values

@@ -18,16 +18,25 @@ app.add_middleware(
 )
 
 @app.post("/analyze")
-async def analyze_device(file: UploadFile = File(...), device_type: str = Form(...)):
+async def analyze_device(
+    device_type: str = Form(...),
+    file: UploadFile = File(None),
+    file_idvd: UploadFile = File(None),
+    file_idvg: UploadFile = File(None)
+):
     try:
-        contents = await file.read()
-        
-        # 1. Parse and validate
-        df = parse_and_validate_csv(contents, device_type)
-        
         # 2. Analyze
         if device_type.lower() == "mosfet":
-            parameters, df_vgs, df_vds = analyze_mosfet(df)
+            if not file_idvd or not file_idvg:
+                raise HTTPException(status_code=400, detail="MOSFET requires both IDVD and IDVG files.")
+                
+            contents_idvd = await file_idvd.read()
+            contents_idvg = await file_idvg.read()
+            
+            df_idvd = parse_and_validate_csv(contents_idvd, "mosfet_idvd")
+            df_idvg = parse_and_validate_csv(contents_idvg, "mosfet_idvg")
+            
+            parameters, df_vgs, df_vds = analyze_mosfet(df_idvg, df_idvd)
             df_vgs_downsampled = downsample_data(df_vgs, max_rows=5000).replace({float('nan'): None})
             df_vds_downsampled = downsample_data(df_vds, max_rows=5000).replace({float('nan'): None})
             
@@ -39,10 +48,18 @@ async def analyze_device(file: UploadFile = File(...), device_type: str = Form(.
                 "Id_vds": df_vds_downsampled["Id"].tolist() if "Id" in df_vds_downsampled else []
             }
         elif device_type.lower() == "moscap":
+            if not file:
+                raise HTTPException(status_code=400, detail="Missing data file.")
+            contents = await file.read()
+            df = parse_and_validate_csv(contents, device_type)
             parameters, processed_df = analyze_moscap(df)
             downsampled_df = downsample_data(processed_df, max_rows=5000).replace({float('nan'): None})
             graph_data = downsampled_df.to_dict(orient='list')
         elif device_type.lower() in ["solar", "solar cell", "solar_cell"]:
+            if not file:
+                raise HTTPException(status_code=400, detail="Missing data file.")
+            contents = await file.read()
+            df = parse_and_validate_csv(contents, device_type)
             parameters, processed_df = analyze_solar(df)
             downsampled_df = downsample_data(processed_df, max_rows=5000).replace({float('nan'): None})
             graph_data = downsampled_df.to_dict(orient='list')

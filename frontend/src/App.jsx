@@ -12,25 +12,42 @@ const devices = [
 export default function App() {
   const [device, setDevice] = useState("mosfet");
   const [file, setFile] = useState(null);
+  const [fileIdvd, setFileIdvd] = useState(null);
+  const [fileIdvg, setFileIdvg] = useState(null);
+  const [activeTab, setActiveTab] = useState("idvd");
   const inputRef = useRef(null);
+  const fileIdvdRef = useRef(null);
+  const fileIdvgRef = useRef(null);
   const [step, setStep] = useState(1);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
 
   const handleAnalyze = async () => {
-    if (!file) {
-      setError("Please upload a CSV file.");
-      return;
+    if (device === "mosfet") {
+      if (!fileIdvd || !fileIdvg) {
+        setError("Please upload both ID-VD and ID-VG CSV files.");
+        return;
+      }
+    } else {
+      if (!file) {
+        setError("Please upload a CSV file.");
+        return;
+      }
     }
     setError(null);
     setStep(2);
-    
+
     const formData = new FormData();
-    formData.append("file", file);
     formData.append("device_type", device);
+    if (device === "mosfet") {
+      formData.append("file_idvd", fileIdvd);
+      formData.append("file_idvg", fileIdvg);
+    } else {
+      formData.append("file", file);
+    }
 
     try {
-      const response = await fetch("https://electrical-characterization-3.onrender.com/analyze", {
+      const response = await fetch("http://localhost:8000/analyze", {
         method: "POST",
         body: formData,
       });
@@ -79,115 +96,168 @@ export default function App() {
         {step === 1 && (
           <div className="grid md:grid-cols-2 gap-8 bg-white/5 border border-white/10 backdrop-blur-xl p-8 rounded-2xl shadow-xl">
 
-          {/* LEFT SIDE */}
-          <div>
-            <div className="text-xs tracking-widest text-slate-400 mb-4 flex items-center gap-3">
-              <span className="flex-1 h-px bg-white/10" />
-              SELECT DEVICE
-              <span className="flex-1 h-px bg-white/10" />
-            </div>
-
-            {devices.map((d) => {
-              const Icon = d.icon;
-              const active = device === d.id;
-
-              return (
-                <div
-                  key={d.id}
-                  onClick={() => setDevice(d.id)}
-                  className={`p-4 mb-4 rounded-xl cursor-pointer border transition ${active
-                      ? "border-cyan-400 bg-cyan-400/10 shadow-[0_0_25px_rgba(34,211,238,0.4)]"
-                      : "border-white/10 hover:border-cyan-400/40"
-                    }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${active ? "bg-cyan-500/20" : "bg-white/5"}`}>
-                      <Icon className="text-cyan-400" />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold">{d.name}</p>
-                        <span className="text-[10px] px-2 py-0.5 bg-white/10 rounded">
-                          {d.params}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400">{d.desc}</p>
-                    </div>
-
-                    {active && (
-                      <div className="ml-auto w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* RIGHT SIDE */}
-          <div className="flex flex-col gap-6">
-
-            {/* UPLOAD */}
+            {/* LEFT SIDE */}
             <div>
               <div className="text-xs tracking-widest text-slate-400 mb-4 flex items-center gap-3">
                 <span className="flex-1 h-px bg-white/10" />
-                UPLOAD CSV
+                SELECT DEVICE
                 <span className="flex-1 h-px bg-white/10" />
               </div>
 
-              <div
-                onClick={() => inputRef.current.click()}
-                className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-cyan-400 transition"
-              >
-                <UploadCloud className="text-cyan-400 mb-2" />
-                <p className="text-sm">
-                  {file ? file.name : "Click or drag a .csv file"}
-                </p>
-                <p className="text-xs text-slate-500">
-                  Drop measurement data to begin
-                </p>
+              {devices.map((d) => {
+                const Icon = d.icon;
+                const active = device === d.id;
 
-                <input
-                  ref={inputRef}
-                  type="file"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files[0])}
-                />
+                return (
+                  <div
+                    key={d.id}
+                    onClick={() => setDevice(d.id)}
+                    className={`p-4 mb-4 rounded-xl cursor-pointer border transition ${active
+                      ? "border-cyan-400 bg-cyan-400/10 shadow-[0_0_25px_rgba(34,211,238,0.4)]"
+                      : "border-white/10 hover:border-cyan-400/40"
+                      }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-lg ${active ? "bg-cyan-500/20" : "bg-white/5"}`}>
+                        <Icon className="text-cyan-400" />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold">{d.name}</p>
+                          <span className="text-[10px] px-2 py-0.5 bg-white/10 rounded">
+                            {d.params}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400">{d.desc}</p>
+                      </div>
+
+                      {active && (
+                        <div className="ml-auto w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* RIGHT SIDE */}
+            <div className="flex flex-col gap-6">
+
+              {/* UPLOAD */}
+              <div>
+                <div className="text-xs tracking-widest text-slate-400 mb-4 flex items-center gap-3">
+                  <span className="flex-1 h-px bg-white/10" />
+                  UPLOAD CSV
+                  <span className="flex-1 h-px bg-white/10" />
+                </div>
+
+                {device === "mosfet" ? (
+                  <div>
+                    <div className="flex gap-2 mb-4">
+                      <button
+                        onClick={() => setActiveTab("idvd")}
+                        className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${activeTab === "idvd" ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50" : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10"}`}
+                      >
+                        ID-VD File
+                      </button>
+                      <button
+                        onClick={() => setActiveTab("idvg")}
+                        className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${activeTab === "idvg" ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50" : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10"}`}
+                      >
+                        ID-VG File
+                      </button>
+                    </div>
+
+                    {activeTab === "idvd" ? (
+                      <div
+                        onClick={() => fileIdvdRef.current.click()}
+                        className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-cyan-400 transition"
+                      >
+                        <UploadCloud className="text-cyan-400 mb-2" />
+                        <p className="text-sm">
+                          {fileIdvd ? fileIdvd.name : "Click or drag ID-VD .csv"}
+                        </p>
+                        <input
+                          ref={fileIdvdRef}
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => setFileIdvd(e.target.files[0])}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => fileIdvgRef.current.click()}
+                        className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-cyan-400 transition"
+                      >
+                        <UploadCloud className="text-cyan-400 mb-2" />
+                        <p className="text-sm">
+                          {fileIdvg ? fileIdvg.name : "Click or drag ID-VG .csv"}
+                        </p>
+                        <input
+                          ref={fileIdvgRef}
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => setFileIdvg(e.target.files[0])}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => inputRef.current.click()}
+                    className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-cyan-400 transition"
+                  >
+                    <UploadCloud className="text-cyan-400 mb-2" />
+                    <p className="text-sm">
+                      {file ? file.name : "Click or drag a .csv file"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Drop measurement data to begin
+                    </p>
+
+                    <input
+                      ref={inputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => setFile(e.target.files[0])}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* FORMAT */}
-            <div className="grid grid-cols-3 gap-3">
-              <MiniCard title="MOSFET" value="Vgs, Vds, Id" />
-              <MiniCard title="MOSCAP" value="Vg, C" />
-              <MiniCard title="SOLAR" value="V, I" />
-            </div>
-
-            {/* OUTPUT */}
-            <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
-              <p className="text-xs text-slate-400 mb-3">OUTPUT</p>
-
+              {/* FORMAT */}
               <div className="grid grid-cols-3 gap-3">
-                <Output icon={BarChart3} label="Graphs" />
-                <Output icon={Zap} label="Parameters" />
-                <Output icon={Sparkles} label="Insights" />
+                <MiniCard title="MOSFET" value="Vgs, Vds, Id" />
+                <MiniCard title="MOSCAP" value="Vg, C" />
+                <MiniCard title="SOLAR" value="V, I" />
               </div>
+
+              {/* OUTPUT */}
+              <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+                <p className="text-xs text-slate-400 mb-3">OUTPUT</p>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <Output icon={BarChart3} label="Graphs" />
+                  <Output icon={Zap} label="Parameters" />
+                  <Output icon={Sparkles} label="Insights" />
+                </div>
+              </div>
+
+              {/* BUTTON */}
+              {error && (
+                <div className="flex items-center gap-2 text-red-400 bg-red-400/10 p-3 rounded-lg border border-red-400/20 mb-4">
+                  <AlertCircle size={16} />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+              <button
+                onClick={handleAnalyze}
+                className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black py-3 rounded-xl font-bold hover:opacity-90 transition w-full">
+                ⚡ Run Analysis
+              </button>
+
             </div>
-
-            {/* BUTTON */}
-            {error && (
-              <div className="flex items-center gap-2 text-red-400 bg-red-400/10 p-3 rounded-lg border border-red-400/20 mb-4">
-                <AlertCircle size={16} />
-                <p className="text-sm">{error}</p>
-              </div>
-            )}
-            <button 
-              onClick={handleAnalyze}
-              className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black py-3 rounded-xl font-bold hover:opacity-90 transition w-full">
-              ⚡ Run Analysis
-            </button>
-
-          </div>
           </div>
         )}
 
@@ -227,16 +297,16 @@ function ResultsView({ device, results, onReset }) {
 
   const downloadReport = async () => {
     const pdf = new jsPDF("p", "mm", "a4");
-    
+
     // Title
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(22);
     pdf.text(`${device.toUpperCase()} Analysis Report`, 15, 20);
-    
+
     // Parameters
     pdf.setFontSize(16);
     pdf.text("Extracted Parameters", 15, 35);
-    
+
     let y = 45;
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(12);
@@ -244,7 +314,7 @@ function ResultsView({ device, results, onReset }) {
       pdf.text(`${key}: ${value}`, 15, y);
       y += 8;
     });
-    
+
     // Graphs
     const element = document.getElementById("graphs-container");
     if (element) {
@@ -267,10 +337,10 @@ function ResultsView({ device, results, onReset }) {
         await new Promise(resolve => setTimeout(resolve, 100)); // wait for Plotly re-render
         const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#ffffff" });
         const imgData = canvas.toDataURL("image/png");
-        
+
         const pdfWidth = pdf.internal.pageSize.getWidth() - 30;
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
+
         pdf.setFontSize(16);
         pdf.setFont("helvetica", "bold");
         pdf.text("Interactive Curves", 15, y + 5);
@@ -293,13 +363,13 @@ function ResultsView({ device, results, onReset }) {
         element.classList.remove('bg-white');
       }
     }
-    
+
     pdf.save(`${device}_full_report.pdf`);
   };
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
-      <button 
+      <button
         onClick={onReset}
         className="flex items-center text-cyan-400/70 hover:text-cyan-400 transition gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-lg w-fit"
       >
@@ -329,25 +399,25 @@ function ResultsView({ device, results, onReset }) {
 
         {/* Graphs */}
         <div className="lg:col-span-3 bg-white/5 border border-white/10 backdrop-blur-xl p-6 rounded-2xl flex flex-col">
-           <div className="flex justify-between items-center mb-6">
-             <h2 className="text-lg font-bold flex items-center gap-2 text-white">
-                <BarChart3 className="text-cyan-400" />
-                Interactive Curves
-              </h2>
-              <div className="flex gap-2">
-                <button onClick={downloadReport} className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition border border-emerald-500/30 text-sm">
-                  <Download size={16} />
-                  Full Report (PDF)
-                </button>
-                <button onClick={downloadPNG} className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition border border-cyan-500/30 text-sm">
-                  <Download size={16} />
-                  Export PNG
-                </button>
-              </div>
-           </div>
-            <div id="graphs-container" className="bg-[#020617] border border-white/10 rounded-xl p-2 min-h-[500px] flex-1 relative overflow-hidden">
-               <GraphsRenderer device={device} data={results.graph_data} />
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-bold flex items-center gap-2 text-white">
+              <BarChart3 className="text-cyan-400" />
+              Interactive Curves
+            </h2>
+            <div className="flex gap-2">
+              <button onClick={downloadReport} className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition border border-emerald-500/30 text-sm">
+                <Download size={16} />
+                Full Report (PDF)
+              </button>
+              <button onClick={downloadPNG} className="flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 rounded-lg transition border border-cyan-500/30 text-sm">
+                <Download size={16} />
+                Export PNG
+              </button>
             </div>
+          </div>
+          <div id="graphs-container" className="bg-[#020617] border border-white/10 rounded-xl p-2 min-h-[500px] flex-1 relative overflow-hidden">
+            <GraphsRenderer device={device} data={results.graph_data} />
+          </div>
         </div>
       </div>
     </div>
@@ -375,29 +445,29 @@ function GraphsRenderer({ device, data }) {
     const config = { responsive: true, displayModeBar: false };
 
     if (device === 'mosfet') {
-      window.Plotly.newPlot(chart1Ref.current, 
+      window.Plotly.newPlot(chart1Ref.current,
         [{ x: data.Vgs, y: data.Id_vgs, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#22d3ee' } }],
         { ...layoutBase, title: { text: 'Id vs Vgs', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vgs (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Id (A)' } },
         config
       );
-      window.Plotly.newPlot(chart2Ref.current, 
+      window.Plotly.newPlot(chart2Ref.current,
         [{ x: data.Vds, y: data.Id_vds, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#3b82f6' } }],
         { ...layoutBase, title: { text: 'Id vs Vds', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vds (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Id (A)' } },
         config
       );
-      window.Plotly.newPlot(chart3Ref.current, 
+      window.Plotly.newPlot(chart3Ref.current,
         [{ x: data.Vgs, y: data.sqrt_Id, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#a855f7' } }],
         { ...layoutBase, title: { text: 'sqrt(Id) vs Vgs', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vgs (V)' }, yaxis: { ...layoutBase.yaxis, title: 'sqrt(Id)' } },
         config
       );
     } else if (device === 'moscap') {
-      window.Plotly.newPlot(chart1Ref.current, 
+      window.Plotly.newPlot(chart1Ref.current,
         [{ x: data.Vg, y: data.C, type: 'scattergl', mode: 'lines+markers', marker: { size: 6, color: '#22d3ee' }, line: { color: '#22d3ee' } }],
         { ...layoutBase, title: { text: 'C-V Characteristics', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vg (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Capacitance (F)' } },
         config
       );
     } else if (device === 'solar') {
-      window.Plotly.newPlot(chart1Ref.current, 
+      window.Plotly.newPlot(chart1Ref.current,
         [{ x: data.Voltage, y: data.Current, type: 'scattergl', mode: 'lines+markers', marker: { size: 6, color: '#facc15' }, line: { color: '#facc15' } }],
         { ...layoutBase, title: { text: 'I-V Characteristics', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Voltage (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Current (A)' } },
         config

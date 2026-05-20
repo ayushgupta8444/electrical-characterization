@@ -12,8 +12,10 @@ def parse_and_validate_csv(file_bytes: bytes, device_type: str) -> pd.DataFrame:
     df.columns = df.columns.str.strip()
     
     device_lower = device_type.lower()
-    if device_lower == "mosfet":
-        required_cols = {"Vgs", "Vds", "Id"}
+    if device_lower == "mosfet_idvd":
+        required_cols = {"Vds", "Id"}
+    elif device_lower == "mosfet_idvg":
+        required_cols = {"Vgs", "Id"}
     elif device_lower == "moscap":
         required_cols = {"Vg", "C"}
     elif device_lower in ["solar cell", "solar", "solar_cell"]:
@@ -25,7 +27,7 @@ def parse_and_validate_csv(file_bytes: bytes, device_type: str) -> pd.DataFrame:
     if missing_cols:
         raise HTTPException(status_code=400, detail=f"Missing required columns: {', '.join(missing_cols)}")
         
-    if device_lower == "mosfet":
+    if device_lower in ["mosfet_idvd", "mosfet_idvg"]:
         optionals = {"L", "W", "Cox"}
         keep_cols = list(required_cols.union(optionals.intersection(set(df.columns))))
         df = df[keep_cols]
