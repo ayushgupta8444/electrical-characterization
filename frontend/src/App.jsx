@@ -61,7 +61,8 @@ export default function App() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/analyze", {
+      const apiUrl = "https://electrical-characterization-3.onrender.com/analyze";
+      const response = await fetch(apiUrl, {
         method: "POST",
         body: formData,
       });
@@ -177,11 +178,10 @@ export default function App() {
                             setMosfetMode("both");
                             setActiveTab("idvd");
                           }}
-                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
-                            mosfetMode === "both"
+                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${mosfetMode === "both"
                               ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20"
                               : "text-slate-400 hover:text-white"
-                          }`}
+                            }`}
                         >
                           Both (Combined)
                         </button>
@@ -191,11 +191,10 @@ export default function App() {
                             setMosfetMode("idvd");
                             setActiveTab("idvd");
                           }}
-                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
-                            mosfetMode === "idvd"
+                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${mosfetMode === "idvd"
                               ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20"
                               : "text-slate-400 hover:text-white"
-                          }`}
+                            }`}
                         >
                           ID-VD Only
                         </button>
@@ -205,11 +204,10 @@ export default function App() {
                             setMosfetMode("idvg");
                             setActiveTab("idvg");
                           }}
-                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
-                            mosfetMode === "idvg"
+                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${mosfetMode === "idvg"
                               ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20"
                               : "text-slate-400 hover:text-white"
-                          }`}
+                            }`}
                         >
                           ID-VG Only
                         </button>
@@ -222,22 +220,20 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => setActiveTab("idvd")}
-                          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${
-                            activeTab === "idvd"
+                          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${activeTab === "idvd"
                               ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50"
                               : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10"
-                          }`}
+                            }`}
                         >
                           ID-VD File
                         </button>
                         <button
                           type="button"
                           onClick={() => setActiveTab("idvg")}
-                          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${
-                            activeTab === "idvg"
+                          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${activeTab === "idvg"
                               ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50"
                               : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10"
-                          }`}
+                            }`}
                         >
                           ID-VG File
                         </button>
