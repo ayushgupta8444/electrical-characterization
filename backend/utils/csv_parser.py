@@ -28,7 +28,7 @@ def parse_and_validate_csv(file_bytes: bytes, device_type: str) -> pd.DataFrame:
         raise HTTPException(status_code=400, detail=f"Missing required columns: {', '.join(missing_cols)}")
         
     if device_lower in ["mosfet_idvd", "mosfet_idvg"]:
-        optionals = {"L", "W", "Cox"}
+        optionals = {"L", "W", "Cox", "Vgs", "Vds"}
         keep_cols = list(required_cols.union(optionals.intersection(set(df.columns))))
         df = df[keep_cols]
     else:

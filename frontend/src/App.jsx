@@ -11,6 +11,7 @@ const devices = [
 
 export default function App() {
   const [device, setDevice] = useState("mosfet");
+  const [mosfetMode, setMosfetMode] = useState("both");
   const [file, setFile] = useState(null);
   const [fileIdvd, setFileIdvd] = useState(null);
   const [fileIdvg, setFileIdvg] = useState(null);
@@ -24,8 +25,16 @@ export default function App() {
 
   const handleAnalyze = async () => {
     if (device === "mosfet") {
-      if (!fileIdvd || !fileIdvg) {
+      if (mosfetMode === "both" && (!fileIdvd || !fileIdvg)) {
         setError("Please upload both ID-VD and ID-VG CSV files.");
+        return;
+      }
+      if (mosfetMode === "idvd" && !fileIdvd) {
+        setError("Please upload the ID-VD CSV file.");
+        return;
+      }
+      if (mosfetMode === "idvg" && !fileIdvg) {
+        setError("Please upload the ID-VG CSV file.");
         return;
       }
     } else {
@@ -40,8 +49,13 @@ export default function App() {
     const formData = new FormData();
     formData.append("device_type", device);
     if (device === "mosfet") {
-      formData.append("file_idvd", fileIdvd);
-      formData.append("file_idvg", fileIdvg);
+      formData.append("mosfet_mode", mosfetMode);
+      if (mosfetMode === "both" || mosfetMode === "idvd") {
+        formData.append("file_idvd", fileIdvd);
+      }
+      if (mosfetMode === "both" || mosfetMode === "idvg") {
+        formData.append("file_idvg", fileIdvg);
+      }
     } else {
       formData.append("file", file);
     }
@@ -154,20 +168,81 @@ export default function App() {
 
                 {device === "mosfet" ? (
                   <div>
-                    <div className="flex gap-2 mb-4">
-                      <button
-                        onClick={() => setActiveTab("idvd")}
-                        className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${activeTab === "idvd" ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50" : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10"}`}
-                      >
-                        ID-VD File
-                      </button>
-                      <button
-                        onClick={() => setActiveTab("idvg")}
-                        className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${activeTab === "idvg" ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50" : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10"}`}
-                      >
-                        ID-VG File
-                      </button>
+                    {/* MOSFET ANALYSIS MODE PILLED SEGMENT */}
+                    <div className="mb-4 bg-white/5 p-1 rounded-xl border border-white/10">
+                      <div className="flex">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMosfetMode("both");
+                            setActiveTab("idvd");
+                          }}
+                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
+                            mosfetMode === "both"
+                              ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          Both (Combined)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMosfetMode("idvd");
+                            setActiveTab("idvd");
+                          }}
+                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
+                            mosfetMode === "idvd"
+                              ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          ID-VD Only
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMosfetMode("idvg");
+                            setActiveTab("idvg");
+                          }}
+                          className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition ${
+                            mosfetMode === "idvg"
+                              ? "bg-cyan-500 text-black shadow-lg shadow-cyan-500/20"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          ID-VG Only
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Conditional Upload Box */}
+                    {mosfetMode === "both" && (
+                      <div className="flex gap-2 mb-4">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("idvd")}
+                          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${
+                            activeTab === "idvd"
+                              ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50"
+                              : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          ID-VD File
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("idvg")}
+                          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition ${
+                            activeTab === "idvg"
+                              ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50"
+                              : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10"
+                          }`}
+                        >
+                          ID-VG File
+                        </button>
+                      </div>
+                    )}
 
                     {activeTab === "idvd" ? (
                       <div
@@ -429,6 +504,9 @@ function GraphsRenderer({ device, data }) {
   const chart2Ref = useRef(null);
   const chart3Ref = useRef(null);
 
+  const hasVgs = data && data.Vgs && data.Vgs.length > 0;
+  const hasVds = data && data.Vds && data.Vds.length > 0;
+
   useEffect(() => {
     if (!window.Plotly) return;
 
@@ -445,33 +523,43 @@ function GraphsRenderer({ device, data }) {
     const config = { responsive: true, displayModeBar: false };
 
     if (device === 'mosfet') {
-      window.Plotly.newPlot(chart1Ref.current,
-        [{ x: data.Vgs, y: data.Id_vgs, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#22d3ee' } }],
-        { ...layoutBase, title: { text: 'Id vs Vgs', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vgs (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Id (A)' } },
-        config
-      );
-      window.Plotly.newPlot(chart2Ref.current,
-        [{ x: data.Vds, y: data.Id_vds, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#3b82f6' } }],
-        { ...layoutBase, title: { text: 'Id vs Vds', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vds (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Id (A)' } },
-        config
-      );
-      window.Plotly.newPlot(chart3Ref.current,
-        [{ x: data.Vgs, y: data.sqrt_Id, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#a855f7' } }],
-        { ...layoutBase, title: { text: 'sqrt(Id) vs Vgs', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vgs (V)' }, yaxis: { ...layoutBase.yaxis, title: 'sqrt(Id)' } },
-        config
-      );
+      if (hasVgs && chart1Ref.current) {
+        window.Plotly.newPlot(chart1Ref.current,
+          [{ x: data.Vgs, y: data.Id_vgs, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#22d3ee' } }],
+          { ...layoutBase, title: { text: 'Id vs Vgs', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vgs (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Id (A)' } },
+          config
+        );
+      }
+      if (hasVds && chart2Ref.current) {
+        window.Plotly.newPlot(chart2Ref.current,
+          [{ x: data.Vds, y: data.Id_vds, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#3b82f6' } }],
+          { ...layoutBase, title: { text: 'Id vs Vds', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vds (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Id (A)' } },
+          config
+        );
+      }
+      if (hasVgs && chart3Ref.current) {
+        window.Plotly.newPlot(chart3Ref.current,
+          [{ x: data.Vgs, y: data.sqrt_Id, type: 'scattergl', mode: 'markers', marker: { size: 4, color: '#a855f7' } }],
+          { ...layoutBase, title: { text: 'sqrt(Id) vs Vgs', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vgs (V)' }, yaxis: { ...layoutBase.yaxis, title: 'sqrt(Id)' } },
+          config
+        );
+      }
     } else if (device === 'moscap') {
-      window.Plotly.newPlot(chart1Ref.current,
-        [{ x: data.Vg, y: data.C, type: 'scattergl', mode: 'lines+markers', marker: { size: 6, color: '#22d3ee' }, line: { color: '#22d3ee' } }],
-        { ...layoutBase, title: { text: 'C-V Characteristics', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vg (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Capacitance (F)' } },
-        config
-      );
+      if (chart1Ref.current) {
+        window.Plotly.newPlot(chart1Ref.current,
+          [{ x: data.Vg, y: data.C, type: 'scattergl', mode: 'lines+markers', marker: { size: 6, color: '#22d3ee' }, line: { color: '#22d3ee' } }],
+          { ...layoutBase, title: { text: 'C-V Characteristics', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Vg (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Capacitance (F)' } },
+          config
+        );
+      }
     } else if (device === 'solar') {
-      window.Plotly.newPlot(chart1Ref.current,
-        [{ x: data.Voltage, y: data.Current, type: 'scattergl', mode: 'lines+markers', marker: { size: 6, color: '#facc15' }, line: { color: '#facc15' } }],
-        { ...layoutBase, title: { text: 'I-V Characteristics', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Voltage (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Current (A)' } },
-        config
-      );
+      if (chart1Ref.current) {
+        window.Plotly.newPlot(chart1Ref.current,
+          [{ x: data.Voltage, y: data.Current, type: 'scattergl', mode: 'lines+markers', marker: { size: 6, color: '#facc15' }, line: { color: '#facc15' } }],
+          { ...layoutBase, title: { text: 'I-V Characteristics', font: { color: '#fff' } }, xaxis: { ...layoutBase.xaxis, title: 'Voltage (V)' }, yaxis: { ...layoutBase.yaxis, title: 'Current (A)' } },
+          config
+        );
+      }
     }
 
     return () => {
@@ -479,16 +567,31 @@ function GraphsRenderer({ device, data }) {
       if (chart2Ref.current) window.Plotly.purge(chart2Ref.current);
       if (chart3Ref.current) window.Plotly.purge(chart3Ref.current);
     };
-  }, [device, data]);
+  }, [device, data, hasVgs, hasVds]);
 
   if (device === 'mosfet') {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full w-full">
-        <div ref={chart1Ref} className="h-[300px] w-full" />
-        <div ref={chart2Ref} className="h-[300px] w-full" />
-        <div ref={chart3Ref} className="h-[300px] w-full lg:col-span-2" />
-      </div>
-    );
+    if (hasVgs && hasVds) {
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full w-full">
+          <div ref={chart1Ref} className="h-[300px] w-full" />
+          <div ref={chart2Ref} className="h-[300px] w-full" />
+          <div ref={chart3Ref} className="h-[300px] w-full lg:col-span-2" />
+        </div>
+      );
+    } else if (hasVgs) {
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full w-full">
+          <div ref={chart1Ref} className="h-[400px] w-full" />
+          <div ref={chart3Ref} className="h-[400px] w-full" />
+        </div>
+      );
+    } else if (hasVds) {
+      return (
+        <div className="w-full h-full min-h-[400px] flex items-center justify-center">
+          <div ref={chart2Ref} className="w-full h-[400px]" />
+        </div>
+      );
+    }
   }
 
   return <div ref={chart1Ref} className="w-full h-full min-h-[500px]" />;
